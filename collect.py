@@ -1,9 +1,24 @@
 from bs4 import BeautifulSoup as bs
 import requests as rq
+from fake_useragent import UserAgent as UA
 import time
 
+
 #collecting data def
-def collect(url, param, options): 
+def collect(url, param, options):
+    
+    #requests and bs4 connect
+    def connect(url, params={}, opt={"proxy": {}}):
+        ua = UA()
+        header = {
+            'user-agent': ua.random,
+            'x-requested-with': 'XMLHttpRequest'}
+        proxies = opt['proxy']
+        resp = rq.get(url, headers=header, proxies=proxies, params=param, timeout=1)
+        resp.encoding = 'utf-8-sig'
+        soup = bs(resp.text, 'lxml')
+        return soup
+    
     alt = []
     try:
         while True:
@@ -30,6 +45,6 @@ def collect(url, param, options):
             except:
                 print('All is collected!')
                 break    
-    except:
-        print('Something wrong.')
+    except Exception as e:
+        print(f"Something wrong: {e}")
     return alt
