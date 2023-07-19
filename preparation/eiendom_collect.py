@@ -9,13 +9,13 @@ import json
 options = {'proxy': {}} #your proxy
 
 #requests and bs4 connect
-def connect(url, params={}, opt={"proxy": {}}):
+def connect(url, opt={"proxy": {}}):
     ua = UA()
     header = {
         'user-agent': ua.random,
         'x-requested-with': 'XMLHttpRequest'}
     proxies = opt['proxy']
-    resp = rq.get(url, headers=header, proxies=proxies, params=param, timeout=1)
+    resp = rq.get(url, headers=header, proxies=proxies, timeout=1)
     resp.encoding = 'utf-8-sig'
     soup = bs(resp.text, 'lxml')
     return soup
@@ -29,10 +29,17 @@ def coll_e(options):
     eiendom = side.find_all('li', {'class', 'link--dark'})
     eiendom = dict(map(lambda x: ((x.text).strip().split(' (')[0], x.find('a')['href'].split('?')[0]), eiendom))
 
-    if 'Hotellovernatting' in eiendom: #don't need information about hotells
+    if 'Hotellovernatting' in eiendom: #don't need the information about hotells
         del eiendom['Hotellovernatting']
-    if 'Bolig til salgs i utlandet' in eiendom: #don't need information from other countries
+    if 'Bolig til salgs i utlandet' in eiendom: #don't need the information from other countries
         del eiendom['Bolig til salgs i utlandet']
+    if 'Bolig ønskes leid' in eiendom: #need to write another code, because littel bit different htpl structure
+        del eiendom['Bolig ønskes leid']
+    if 'Feriehus og hytter til leie' in eiendom: #need to write another code, because different param and html structure
+        del eiendom['Feriehus og hytter til leie']
+    if 'Nye boliger, kommer for salg' in eiendom: #already in another category
+        del eiendom['Nye boliger, kommer for salg']
+        
 
     #or (information may not be relevant)
     eiendom_old = {'Bolig til salgs': 'https://www.finn.no/realestate/homes/search.html',
