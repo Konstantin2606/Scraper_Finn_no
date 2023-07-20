@@ -39,7 +39,8 @@ def coll_e(options):
         del eiendom['Feriehus og hytter til leie']
     if 'Nye boliger, kommer for salg' in eiendom: #already in another category
         del eiendom['Nye boliger, kommer for salg']
-        
+    if 'Nye boliger' in eiendom: #already in another category
+        del eiendom['Nye boliger']
 
     #or (information may not be relevant)
     eiendom_old = {'Bolig til salgs': 'https://www.finn.no/realestate/homes/search.html',

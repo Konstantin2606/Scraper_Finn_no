@@ -1,7 +1,8 @@
 import pandas as pd
 import numpy as np
 
-def data_df(data, categ): #make columns data def
+#make columns data def
+def data_df(data, categ): 
     try:
         if categ in ('Bolig til salgs', 'Nye boliger', 'Fritidsbolig til salgs'):
             columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'r_type_amount', 'visning', 'link')
@@ -16,8 +17,12 @@ def data_df(data, categ): #make columns data def
                 df = pd.DataFrame(data, columns=columns)
 
         elif categ in ('Tomter', 'Næringstomter'):
-            columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'link')
-            df = pd.DataFrame(data, columns=columns)
+            try:
+                columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'link')
+                df = pd.DataFrame(data, columns=columns)
+            except:
+                columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'owner?', 'link')
+                df = pd.DataFrame(data, columns=columns)
 
         elif categ in ('Bolig til leie', 'Hjerterom - Bolig til leie', 'Næringseiendom til leie', ):
             columns = ('name', 'from', 'address', 'square_metre', 'price', 'r_type_amount', 'link')
