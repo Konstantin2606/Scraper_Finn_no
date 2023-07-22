@@ -3,8 +3,77 @@ import numpy as np
 
 #cleaning data def
 def cleaning(all_data): #from data_df
+    
+    # before cleaning
+    amount = len(all_data)
     df = all_data.drop_duplicates()
     pd.set_option('display.max_colwidth', None)
+    columns = ['name', 'from', 'address']
+    print('Result:')
+    
+    #removing strange birds --------------------------------------------------------------------------------------
+    
+    if 'visning' in df.columns: #visning
+        df['visning'].fillna('0', inplace=True)
+        #is there any links
+        html_v = df['visning'].str.contains('http')
+        if html_v.sum():
+            df.loc[html_v, 'link'] = df['visning'][html_v]
+            df.loc[html_v, 'visning'] = '0'
+
+    if 'r_type_amount' in df.columns: #r_type_amount
+        df['r_type_amount'].fillna('0', inplace=True)
+        ow = df['r_type_amount'].str.contains('http|finn') #links in r_type_amount
+        df.loc[ow, 'link'] = df['r_type_amount'][ow]
+        df.loc[ow, 'r_type_amount'] = '0'
+        ow = df['r_type_amount'].str.contains('Visning') #'visning' in r_type_amount
+        if 'visning' in df.columns:
+            df.loc[ow, 'visning'] = df['r_type_amount'][ow]
+        df.loc[ow, 'r_type_amount'] = '0'
+        
+    if 'price_desc' in df.columns: #price_desc
+        df['price_desc'].fillna('0', inplace=True)
+        ow = df['price_desc'].str.contains('http|finn') #links in 'price_desc'
+        df.loc[ow, 'link'] = df['price_desc'][ow]
+        df.loc[ow, 'price_desc'] = '0'
+        ow = df['price_desc'].str.contains('Annet fritid|Eier|Leilighet|Hytte|soverom') #'r_type_amount' in 'price_desc'
+        if 'r_type_amount' in df.columns:
+            df.loc[ow, 'r_type_amount'] = df['price_desc'][ow]
+        df.loc[ow, 'price_desc'] = '0'
+        ow = df['price_desc'].str.contains('Visning') #'visning' in 'price_desc'
+        if 'visning' in df.columns:
+            df.loc[ow, 'visning'] = df['price_desc'][ow]
+        df.loc[ow, 'price_desc'] = '0'
+        
+    if 'owner?' in df.columns: #owner? - tomter categ. not so many data(1-2 str), can't use 
+        try:
+            df['owner?'].fillna('0', inplace=True) #can't work with NaN
+            ow = df['owner?'].str.contains('http|finn')
+            df.loc[ow, 'link'] = df['owner?'][ow] #changing links columns
+            del df['owner?']
+        except Exception as e:
+            print(f"Can't clean 'owner?' column- {e}")
+    
+    # if 'price' in df.columns: and if 'square_metre' in df.columns: ------------- nesessery
+        
+
+    #main cleaning -----------------------------------------------------------------------------------------------
+    
+    #for square_metre
+    if 'square_metre' in df.columns:
+        try:
+            df['square_metre'] = df['square_metre'].str.split('-').str[-1] #clean from '-'
+            df['square_metre'] = df['square_metre'].str[:-3] #clean from 'm2'
+            df['square_metre'] = df['square_metre'].str.replace('\xa0', '') #clean from '\xa0'
+            ow = df['square_metre'].str.isdigit()
+            #if ~ow.sum(): #clean from not digit square_metre - usualy useless data
+            #    df = df[ow]
+            df['square_metre'] = df['square_metre'].map(int) #make int
+            
+        except Exception as e:
+            print(f'problem with square_metre descr - {e}')
+        
+        columns.append('square_metre')
     
     #for price
     if 'price' in df.columns:
@@ -12,8 +81,9 @@ def cleaning(all_data): #from data_df
             df['price'] = df['price'].str.split('-').str[-1] #clean from '-'
             df['price'] = df['price'].str[:-3] #clean from 'kr'
             df['price'] = df['price'].str.replace('\xa0', '') #clean from '\xa0'
-            if df['price'].str.contains('http').sum(): #clean from http
-                df = df[~df['price'].str.contains('http')]
+            ow = df['price'].str.isdigit()
+            #if ~ow.sum(): #clean from not digit - probably allerede 'solgt'
+            #    df = df[ow]
                 
             #price to int
             try:
@@ -21,17 +91,19 @@ def cleaning(all_data): #from data_df
                 if len(df.loc[df['price'] < 100, 'price'])>0: #clean from untrust values
                     df.loc[df['price'] < 100, 'price'] =0
             except:
-                print("can't make price int")
+                print(f"can't make price int - {e}")
 
-        except:
-            print('problem with price descr')
-    
+        except Exception as e:
+            print(f'problem with price descr - {e}')
+        
+        columns.append('price')
+        
     #for price_desc
     if 'price_desc' in df.columns:
         try:
             #trying to understend if is something to split
             df_pr = df['price_desc'].str.split(' ∙ ', expand=True) 
-            df_pr_count = df_pr.iloc[0].count()#!!!! mistake--------------------------------------!!!!
+            df_pr_count = len(df_pr.columns)
             
             #if 2 items
             if df_pr_count == 2:
@@ -41,100 +113,108 @@ def cleaning(all_data): #from data_df
                 #fellestung cleaning
                 try:
                     # clean from- :, -, kr, \xa0
-                    df.loc[:, 'fellesutg'] = df['fellesutg'].str.split(':').str[-1].str.split('-').str[-1].str[:-3].str.replace('\xa0', '')
+                    df.loc[:, 'fellesutg'] = df['fellesutg'].str.split(':').str[-1].str.split('-').str[-1].str.replace('kr', '')
+                    df.loc[:, 'fellesutg'] = df['fellesutg'].str.replace(r'^\s*$|^\xa0$', '0', regex=True).str.replace('\xa0', '')
                     try:
                         df['fellesutg'].fillna(0, inplace=True) #fill None with 0
                         df.loc[:, 'fellesutg'] = df['fellesutg'].map(int) #make int
-                    except:
-                        print("can't make fellesutg int")
+                    except Exception as e:
+                        print(f"can't make fellesutg int - {e}")
                         
-                except:
-                    print('problem with fellesutg cleaning')
-            
+                except Exception as e:
+                    print(f'problem with fellesutg cleaning - {e}')
+                
+                columns.extend(['total_price', 'fellesutg'])
+                
             #if nothing to split, probably it's a total
             if df_pr_count == 1:
                 df['total_price'] = df_pr
                 del df['price_desc']
-            
+                columns.append('total_price')
             #total_price cleaning
             try:
                 # clean from- :, -, kr, \xa0
-                df.loc[:, 'total_price'] = df['total_price'].str.split(':').str[-1].str.split('-').str[-1].str[:-3].str.replace('\xa0', '')
+                df.loc[:, 'total_price'] = df['total_price'].str.split(':').str[-1].str.split('-').str[-1].str.replace('kr', '')
+                df.loc[:, 'total_price'] = df['total_price'].str.replace(r'^\s*$|^\xa0$', '0', regex=True).str.replace('\xa0', '')
                 try:
-                    df['total_price'].fillna(0, inplace=True) #fill None with 0
+                    df['total_price'].fillna('0', inplace=True) #fill None with 0
                     df.loc[:, 'total_price'] = df['total_price'].map(int) #make int
-                except:
-                    print("can't make total_price int")
+                except Exception as e:
+                    print(f"can't make total_price int - {e}")
                     
-            except:
-                print('problem with total_price cleaning')
-                
-        except:
-            print('problem with price_desc descr')
-
+            except Exception as e:
+                print(f'problem with total_price cleaning - {e}')
+            
+        except Exception as e:
+            print(f'problem with price_desc descr - {e}')
+            columns.append('price_desc')
+            
     #for r_type_amount
     if 'r_type_amount' in df.columns:
+        
         try:
             #trying to understend if is something to split
             df_am = df['r_type_amount'].str.split(' ∙ ', expand=True)
-            df_am_count = df_am.iloc[0].count() #!!!!!!!!!!! --------------- could give a mistake!!!!!!
-            
+            df_am_count = len(df_am.columns)
             #if 2 items
             if df_am_count == 2:
-                
-                if df_am.iloc[:, -1].str.contains('Leilighet|Hus').sum(): #is it type
+
+                if df_am.iloc[:, -1].str.contains('Eier').sum(): #is there owner
                     df[['owner?', 'type']] = df_am
                     del df['r_type_amount']
-                
-                elif df_am.iloc[:, -1].str.isdigit().sum(): #is it rooms amount
+                    columns.extend(['owner?', 'type'])
+                    
+                elif df_am.iloc[:, -1].str.split().str[0].str.isdigit().sum(): #is there rooms amount
                     df[['type', 'rooms_amount']] = df_am
                     del df['r_type_amount']
-
-            
+                    columns.extend(['type', 'rooms_amount'])
+                    
             #if 3 items
             elif df_am_count == 3:
                 df[['owner?', 'type', 'rooms_amount']] = df_am
                 del df['r_type_amount']
+                columns.extend(['owner?', 'type', 'rooms_amount'])
 
             #clean 'rooms_amount' from str -'rooms' and make int
             if 'rooms_amount' in df.columns:
                 df.loc[:, 'rooms_amount'] = df['rooms_amount'].str.split().str[0] #clean from str 'rooms'
 
                 try:
-                    df['rooms_amount'].fillna(0, inplace=True) #fill None with 0
+                    df['rooms_amount'].fillna('0', inplace=True) #fill None with 0
                     df.loc[:, 'rooms_amount'] = df['rooms_amount'].map(int) #make int
                 except:
                     print("can't make rooms_amount int")
-
+            
+            if 'type' in df.columns:
+                ow = df['type'].str.contains('Annet fritid')
+                if ow.sum() and 'visning' in df.columns:
+                    df.loc[ow, 'visning'] = df['type'][ow] 
+                    df.loc[ow, 'type'] = '0'
             #more settings - sometimes nessesery
             df.loc[df['type'] == 'Garasje/Parker', ['type']] = 'Garasje/Parkering'
         
-        except:
-            print('problem with r_type_amount descr')
-            
-    #for square_metre
-    if 'square_metre' in df.columns:
-        try:
-            if df['square_metre'].str.contains('http').sum(): #clean from http
-                df = df[~df['square_metre'].str.contains('http')]
-            df['square_metre'] = df['square_metre'].str.split().str[0] #clean from 'm2'
-            df['square_metre'] = df['square_metre'].map(int) #make int
-        
-        except:
-            print('problem with square_metre descr')
-            
+        except Exception as e:
+            print(f'problem with r_type_amount descr - {e}')
+            columns.append('r_type_amount')
+    
     #for visning
     if 'visning' in df.columns:
         try:
-            #is there any links
-            html_v = df['visning'].str.contains('http')
-            if html_v.sum():
-                df.loc[html_v, 'link'] = df.loc[html_v, 'visning']
-                df.loc[html_v, 'visning'] = ''
             #clean from str - 'visning'
             df['visning'] = df['visning'].str.split(' - ').str[-1]
-            
-        except:
-            print('problem with visning descr')
+        except Exception as e:
+            print(f'problem with visning descr - {e}')
+        
+        columns.append('visning')
     
+    #sort columns ------------------------------------------------------------------------------------------------
+    try:
+        if df.columns[0] == 0:
+            raise Exception("something wrong with columns names...")
+        columns.append('link')
+        df = df.reindex(columns, axis=1)
+    except Exception as e:
+        print(f'problem with columns sort - {e}')
+    
+    print(f'\n-- {amount - len(df)} -- str delited, if there is still a problem, try to clean in manually') # after cleaning
     return df

@@ -5,14 +5,18 @@ import numpy as np
 def data_df(data, categ): 
     try:
         if categ in ('Bolig til salgs', 'Nye boliger', 'Fritidsbolig til salgs'):
-            columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'r_type_amount', 'visning', 'link')
-            df = pd.DataFrame(data, columns=columns)
-
+            try:
+                columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'r_type_amount', 'visning', 'link')
+                df = pd.DataFrame(data, columns=columns)
+            except: #if have not visning
+                columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'r_type_amount', 'link')
+                df = pd.DataFrame(data, columns=columns)
+                
         elif categ in ('Fritidstomter', ):
             try:
                 columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'visning', 'link')
                 df = pd.DataFrame(data, columns=columns)
-            except:
+            except: #if have not visning
                 columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'link')
                 df = pd.DataFrame(data, columns=columns)
 
@@ -20,7 +24,7 @@ def data_df(data, categ):
             try:
                 columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'link')
                 df = pd.DataFrame(data, columns=columns)
-            except:
+            except: #if have 'owner?'
                 columns = ('name', 'from', 'address', 'square_metre', 'price', 'price_desc', 'owner?', 'link')
                 df = pd.DataFrame(data, columns=columns)
 
