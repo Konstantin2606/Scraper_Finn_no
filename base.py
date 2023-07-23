@@ -5,7 +5,7 @@ def base():
     with open('preparation/category_link.json', "r") as file: #file with all links (from finn.no)
         data = json.load(file)
     v = dict(enumerate(data.keys(), 1))
-    param = {}
+    param = ''
     
     #wich category
     print('Сhoose a category:', *(map(lambda x: f'{x[0]}) {x[1]}', v.items())), sep='\n', end='\n(pick number)\n')
@@ -20,14 +20,18 @@ def base():
             print('Something wrong, try again.')
 
     #choose cities or city with radius
-    print('Do you want to select 1 - "cities" or 2 - "city with radius"? (pick number)')
+    print('Choose a search method:\n1 - "cities"\n2 - "city with radius"\n(pick number)')
     for tr in range(1, 6):
         chose = input()
-        if chose in ('1', '2'):
+        if chose in ('1', '2', 'All'):
             break
         else:
             print('Something wrong, try again.')
-            
+    
+    #if All - secret, because can make a time error, only for small category
+    if chose == 'All':
+        param = 'page=1&sort=PUBLISHED_DESC'
+    
     #if cities
     if chose == '1':
         with open('preparation/omrde.json', "r") as file: #file with cities (from finn.no)
@@ -46,8 +50,8 @@ def base():
                 if len(cit) == 0:
                     raise Error
                 break
-            except:
-                print('Something wrong, try again.')
+            except Exception as e:
+                print('Something wrong, try again. - {e}')
         #all param
         param = f'{"&".join(cit)}&page=1&sort=PUBLISHED_DESC'
     
@@ -68,8 +72,8 @@ def base():
                         break
                     print('city fail')
                 print('radius fail')
-            except:
-                print('Something wrong, try again.')
+            except Exception as e:
+                print('Something wrong, try again. - {e}')
                 
         #all param
         param = (('geoLocationName', chose[0]),

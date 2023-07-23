@@ -36,14 +36,14 @@ def cleaning(all_data): #from data_df
         ow = df['price_desc'].str.contains('http|finn') #links in 'price_desc'
         df.loc[ow, 'link'] = df['price_desc'][ow]
         df.loc[ow, 'price_desc'] = '0'
-        ow = df['price_desc'].str.contains('Annet fritid|Eier|Leilighet|Hytte|soverom') #'r_type_amount' in 'price_desc'
-        if 'r_type_amount' in df.columns:
-            df.loc[ow, 'r_type_amount'] = df['price_desc'][ow]
-        df.loc[ow, 'price_desc'] = '0'
         ow = df['price_desc'].str.contains('Visning') #'visning' in 'price_desc'
         if 'visning' in df.columns:
             df.loc[ow, 'visning'] = df['price_desc'][ow]
         df.loc[ow, 'price_desc'] = '0'
+        ow = df['price_desc'].str.contains('kr|0') #'r_type_amount' in 'price_desc'
+        if 'r_type_amount' in df.columns:
+            df.loc[~ow, 'r_type_amount'] = df['price_desc'][~ow]
+        df.loc[~ow, 'price_desc'] = '0'
         
     if 'owner?' in df.columns: #owner? - tomter categ. not so many data(1-2 str), can't use 
         try:
@@ -54,22 +54,67 @@ def cleaning(all_data): #from data_df
         except Exception as e:
             print(f"Can't clean 'owner?' column- {e}")
     
-    # if 'price' in df.columns: and if 'square_metre' in df.columns: ------------- nesessery
+    if 'price' in df.columns:
+        df['price'].fillna('0', inplace=True)
+        ow = df['price'].str.contains('http|finn') #links in price
+        df.loc[ow, 'link'] = df['price'][ow]
+        df.loc[ow, 'price'] = '0'
         
+        ow = df['price'].str.contains('Totalpris') #price_desc in price
+        if 'price_desc' in df.columns: 
+            df.loc[ow, 'price_desc'] = df['price'][ow]
+        df.loc[ow, 'price'] = '0'
+        
+        ow = df['price'].str.contains('Visning|Annet fritid') #'visning' in price
+        if 'visning' in df.columns:
+            df.loc[ow, 'visning'] = df['price'][ow]
+        df.loc[ow, 'price'] = '0'
+        
+        ow = df['price'].str.contains('kr|0') #'r_type_amount' in price
+        if 'r_type_amount' in df.columns:
+            df.loc[~ow, 'r_type_amount'] = df['price'][~ow]
+        df.loc[~ow, 'price'] = '0'
+    
+    if 'square_metre' in df.columns:
+        df['square_metre'].fillna('0', inplace=True)
+        ow = df['square_metre'].str.contains('http|finn') #links in 'square_metre'
+        df.loc[ow, 'link'] = df['square_metre'][ow]
+        df.loc[ow, 'square_metre'] = '0'
+        
+        ow = df['square_metre'].str.contains('Totalpris')#price_desc in 'square_metre'
+        if 'price_desc' in df.columns: 
+            df.loc[ow, 'price_desc'] = df['square_metre'][ow]
+        df.loc[ow, 'square_metre'] = '0'
+        
+        ow = df['square_metre'].str.contains('Visning|Annet fritid') #'visning' in 'square_metre'
+        if 'visning' in df.columns:
+            df.loc[ow, 'visning'] = df['square_metre'][ow]
+        df.loc[ow, 'square_metre'] = '0'
+        
+        ow = df['square_metre'].str.contains('kr') #'price' in 'square_metre'
+        if 'price' in df.columns:
+            df.loc[ow, 'price'] = df['square_metre'][ow]
+        df.loc[ow, 'square_metre'] = '0'
 
+        ow = df['square_metre'].str.contains('m²|0') #'r_type_amount' in 'square_metre'
+        if 'r_type_amount' in df.columns:
+            df.loc[~ow, 'r_type_amount'] = df['square_metre'][~ow]
+        df.loc[~ow, 'square_metre'] = '0'
+    
     #main cleaning -----------------------------------------------------------------------------------------------
     
     #for square_metre
     if 'square_metre' in df.columns:
         try:
             df['square_metre'] = df['square_metre'].str.split('-').str[-1] #clean from '-'
-            df['square_metre'] = df['square_metre'].str[:-3] #clean from 'm2'
+            df['square_metre'] = df['square_metre'].str.replace('m²', '') #clean from 'm2'
             df['square_metre'] = df['square_metre'].str.replace('\xa0', '') #clean from '\xa0'
-            ow = df['square_metre'].str.isdigit()
-            #if ~ow.sum(): #clean from not digit square_metre - usualy useless data
-            #    df = df[ow]
-            df['square_metre'] = df['square_metre'].map(int) #make int
             
+            try:
+                df['square_metre'] = df['square_metre'].map(int) #make int
+            except Exception as e:
+                print(f"can't make square_metre int - {e}")
+                
         except Exception as e:
             print(f'problem with square_metre descr - {e}')
         
@@ -79,11 +124,8 @@ def cleaning(all_data): #from data_df
     if 'price' in df.columns:
         try:
             df['price'] = df['price'].str.split('-').str[-1] #clean from '-'
-            df['price'] = df['price'].str[:-3] #clean from 'kr'
+            df['price'] = df['price'].str.replace('kr', '') #clean from 'kr'
             df['price'] = df['price'].str.replace('\xa0', '') #clean from '\xa0'
-            ow = df['price'].str.isdigit()
-            #if ~ow.sum(): #clean from not digit - probably allerede 'solgt'
-            #    df = df[ow]
                 
             #price to int
             try:
@@ -104,7 +146,6 @@ def cleaning(all_data): #from data_df
             #trying to understend if is something to split
             df_pr = df['price_desc'].str.split(' ∙ ', expand=True) 
             df_pr_count = len(df_pr.columns)
-            
             #if 2 items
             if df_pr_count == 2:
                 df[['total_price', 'fellesutg']] = df_pr
@@ -156,10 +197,16 @@ def cleaning(all_data): #from data_df
             #trying to understend if is something to split
             df_am = df['r_type_amount'].str.split(' ∙ ', expand=True)
             df_am_count = len(df_am.columns)
+            
+            #if 1 item
+            if df_am_count == 1:
+                df.rename(columns={'r_type_amount': 'type'}, inplace=True)
+                columns.append('type')
+                
             #if 2 items
-            if df_am_count == 2:
+            elif df_am_count == 2:
 
-                if df_am.iloc[:, -1].str.contains('Eier').sum(): #is there owner
+                if df_am.iloc[:, 0].str.contains('Eier').sum(): #is there owner
                     df[['owner?', 'type']] = df_am
                     del df['r_type_amount']
                     columns.extend(['owner?', 'type'])
@@ -190,8 +237,8 @@ def cleaning(all_data): #from data_df
                 if ow.sum() and 'visning' in df.columns:
                     df.loc[ow, 'visning'] = df['type'][ow] 
                     df.loc[ow, 'type'] = '0'
-            #more settings - sometimes nessesery
-            df.loc[df['type'] == 'Garasje/Parker', ['type']] = 'Garasje/Parkering'
+                #more settings - sometimes nessesery
+                df.loc[df['type'] == 'Garasje/Parker', ['type']] = 'Garasje/Parkering'
         
         except Exception as e:
             print(f'problem with r_type_amount descr - {e}')

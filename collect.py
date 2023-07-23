@@ -4,7 +4,7 @@ from fake_useragent import UserAgent as UA
 import time
 
 
-#collecting data def
+#collecting data
 def collect(categ, url, param, options):
     
     #requests and bs4 connect
@@ -14,16 +14,18 @@ def collect(categ, url, param, options):
             'user-agent': ua.random,
             'x-requested-with': 'XMLHttpRequest'}
         proxies = opt['proxy']
-        resp = rq.get(url, headers=header, proxies=proxies, params=param, timeout=1)
+        resp = rq.get(url, headers=header, proxies=proxies, params=params, timeout=1)
         resp.encoding = 'utf-8-sig'
         soup = bs(resp.text, 'lxml')
         return soup
     
     alt = []
+    counter = iter(range(1, 100))
+    param_switcher = 0
     try:
         while True:
             soup = connect(url, params=param, opt=options)
-            print('connection successful')
+            print(f'connection successful - {next(counter)}')
             for i in soup.find_all('article'):
                 one = []
                 one.append(i.find("a").text) #name
@@ -47,20 +49,26 @@ def collect(categ, url, param, options):
                 visning = i.find('span', {'class':'inline-block px-8 py-4 text-12 border border-bluegray-300 rounded-full'})
                 if visning:
                     one.append(visning.text) #Visning
-                one.append(i.find('a', {'class': 'sf-search-ad-link link link--dark hover:no-underline'})['href']) #link
+                #link
+                one.append(i.find('a', {'class': 'sf-search-ad-link link link--dark hover:no-underline'})['href'])
+                #all
                 alt.append(one)
             try:
                 link = soup.find('nav', {"class": 'pagination u-pb8 u-pt16'}).find_all('a')[-1]['href']
                 link = link[1:]
                 link = dict(map(lambda x: x.split('='), link.split('&')))
+                if param_switcher == 0:
+                    param = dict(map(lambda x: x.split('='), param.split('&')))
+                    param_switcher = 1
                 if link['page'] == param['page']:
                     raise Exception('Last link.')
                 else:
-                    param = link
+                    param = link.copy()
                 time.sleep(5)
             except:
-                print('All is collected!')
+                print('All data collected!')
                 break    
     except Exception as e:
         print(f"Something wrong: {e}")
+    print(f'All rows -- {len(alt)} --')
     return alt

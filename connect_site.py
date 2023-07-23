@@ -9,7 +9,7 @@ def connect(url, params={}, opt={"proxy": {}}):
         'user-agent': ua.random,
         'x-requested-with': 'XMLHttpRequest'}
     proxies = opt['proxy']
-    resp = rq.get(url, headers=header, proxies=proxies, params=param, timeout=1)
+    resp = rq.get(url, headers=header, proxies=proxies, params=params, timeout=1)
     resp.encoding = 'utf-8-sig'
     soup = bs(resp.text, 'lxml')
     return soup
