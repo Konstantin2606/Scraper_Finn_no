@@ -3,7 +3,7 @@ import numpy as np
 
 #cleaning data def
 def cleaning(all_data): #from data_df
-    
+
     # before cleaning
     amount = len(all_data)
     df = all_data.drop_duplicates()

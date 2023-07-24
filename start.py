@@ -7,21 +7,22 @@ from data_df import data_df
 import pandas as pd
 from datetime import datetime
 
-#Cleaning def working good, but
-#I heve SettingWithCopyWarning problem there, and i didn't solv it yet.
-#I'll turn on ignore if it scares you or something.
-import warnings
-warnings.simplefilter(action='ignore', category=pd.errors.PerformanceWarning)
 
 def start():
+    
     options = proxies() #proxies
     
     f = base() #what do you need to collect?
     
+    #Cleaning def works good, but i have SettingWithCopyWarning problem there, and i didn't solv it yet.
+    #I'll turn on ignore if it scares you or something.
+    pd.options.mode.chained_assignment = None 
+    
+    
     data = collect(*f, options=options) #collecting process
     
     data = data_df(data, f[0]) #columns settings
-    
+        
     data = cleaning(data) #cleaning process
     
     #saving to csv
@@ -33,8 +34,8 @@ def start():
             c_datetime = datetime.now()
             f_date = c_datetime.strftime("%Y_%m_%d_%Hh_%Mm_%Ss")
             f = f[0].replace(' ', '_')
-            name = f'{f}_{len(result)}_{f_date}rows.csv'
-            result.to_csv(f'results/{name}', sep=',', index=False, encoding='utf-8-sig')
+            name = f'{f}_{len(data)}_{f_date}rows.csv'
+            data.to_csv(f'results/{name}', sep=',', index=False, encoding='utf-8-sig')
             print(f'Saved - filename - {name}')
             break
         elif ans in ('no', 'n', '0'):
@@ -42,4 +43,4 @@ def start():
             break
         else:
             print('-- something wrong, try again --')
-    return result
+    return data

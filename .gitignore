@@ -1,1 +1,6 @@
 main_script.py
+*.ipynb
+.ipynb_checkpoints
+__pycache__
+preparation/.ipynb_checkpoints
+preparation/Collect_possible_settings.ipynb
