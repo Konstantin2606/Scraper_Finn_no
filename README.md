@@ -1,6 +1,4 @@
-
 <h1 align="center">
-  <br>
   Finn.no
   <br>
   Real estate scraper
